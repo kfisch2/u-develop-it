@@ -24,7 +24,11 @@ const db = mysql.createConnection(
 
 // GET all candidates
 app.get('/', (req, res) => {
-  const sql = `SELECT * FROM candidates`;
+  const sql = `SELECT candidates.*, parties.name
+               AS party_name
+               FROM candidates
+               LEFT JOIN parties 
+               ON candidates.party_id = parties.id`;
   db.query(sql, (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message })
@@ -38,7 +42,12 @@ app.get('/', (req, res) => {
 
 // GET candidates by id
 app.get('/api/candidate/:id', (req, res) => {
-  const sql = `SELECT * FROM candidates WHERE id = ?`;
+  const sql = `SELECT candidates.*, parties.name 
+               AS party_name
+               FROM candidates
+               LEFT JOIN parties
+               ON candidates.party_id = parties.id
+               WHERE candidates.id = ?`;
   const params = [req.params.id];
 
   db.query(sql, params, (err, row) => {
@@ -52,6 +61,50 @@ app.get('/api/candidate/:id', (req, res) => {
     })
   })
 })
+
+// GET candidates by party name
+app.get('/api/candidate/party/:party_id', (req, res) => {
+  const sql = `SELECT candidates.*, parties.name 
+               AS party_name
+               FROM candidates
+               LEFT JOIN parties
+               ON candidates.party_id = parties.id
+               WHERE candidates.party_id = ?`;
+  const params = [req.params.party_id];
+
+  db.query(sql, params, (err, row) => {
+    if (err) {
+      res.status(400).json({ error: err.message });
+      return
+    }
+    res.json({
+      message: 'success',
+      data: row
+    })
+  })
+});
+
+// GET candidates not affilated with party
+// weird way to get it since there is no party_id
+app.get('/api/candidate/no_party/:party_id', (req, res) => {
+  const sql = `SELECT candidates.*, parties.name
+               AS party_name 
+               FROM candidates
+               LEFT JOIN parties
+               ON candidates.party_id = parties.id
+               WHERE candidates.party_id IS NULL`;
+  const params = req.params.party_id;
+
+  db.query(sql, params, (err, row) => {
+    if (err) {
+      res.status(400).json({ error: err.message });
+    }
+    res.json({
+      message: 'success',
+      data: row
+    })
+  })
+});
 
 
 
@@ -71,7 +124,7 @@ app.delete('/api/candidate/:id', (req, res) => {
       })
     } else {
       res.json({
-        message:'deleted', 
+        message: 'deleted',
         changes: result.affectedRows,
         id: req.params.id
       })
