@@ -106,11 +106,54 @@ app.get('/api/candidate/no_party/:party_id', (req, res) => {
   })
 });
 
+// GET party by id
+app.get('/party/:id', (req, res) => {
+  const sql = `SELECT * 
+         FROM parties
+         WHERE id = ?`;
+  const params = [req.params.id];
 
+  db.query(sql, params, (err, row) => {
+    if (err) {
+      res.status(400).json({ error: err.message })
+    }
+    res.json({
+      message: 'success',
+      data: row
+    })
+  })
+})
 
+// UPDATE party for a candidate by id
+app.put('/api/candidate/:id', (req, res) => {
+  const errors = inputCheck(req.body, 'party_id');
 
+  if (errors) {
+    res.status(400).json({ error: errors });
+    return;
+  }
 
-// Delete by id
+  const sql = `UPDATE candidates SET party_id = ?
+         WHERE id = ?`
+  const params = [req.body.party_id, req.params.id];
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      res.status(400).json({ error: err.message })
+    } else if (!result.affectedRows) {
+      res.json({
+        message: 'Candidate not found'
+      })
+    } else {
+      res.json({
+        message: 'successfully changed',
+        data: req.body,
+        changes: result.affectedRows
+      });
+    }
+  });
+});
+
+// Delete candidate by id
 app.delete('/api/candidate/:id', (req, res) => {
   const sql = `DELETE FROM candidates WHERE id = ?`;
   const params = [req.params.id];
@@ -154,7 +197,34 @@ app.post('/api/candidate', ({ body }, res) => {
       data: body
     })
   })
-})
+});
+
+// DELETE party
+app.delete('/party/:id', (req, res) => {
+  const sql = `DELETE
+         FROM parties
+         WHERE id = ?`
+  const params = [req.params.id]
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      res.status(400).json({ error: err.message })
+    } else if (!result.affectedRows) {
+      res.json({
+        message: 'Party not found'
+      })
+    } else {
+      res.json({
+        message: 'deleted',
+        changes: result.affectedRows,
+        id: req.params.id
+      })
+    }
+  })
+});
+
+
+
+
 
 
 // Create 
@@ -175,5 +245,5 @@ app.use((req, res) => {
 
 // connect to server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  console.log(`Server running on port ${PORT}`)
+})
