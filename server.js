@@ -62,67 +62,29 @@ app.get('/api/candidate/:id', (req, res) => {
   })
 })
 
-// GET candidates by party name
-app.get('/api/candidate/party/:party_id', (req, res) => {
-  const sql = `SELECT candidates.*, parties.name 
-               AS party_name
-               FROM candidates
-               LEFT JOIN parties
-               ON candidates.party_id = parties.id
-               WHERE candidates.party_id = ?`;
-  const params = [req.params.party_id];
+// Add a candidate
+app.post('/api/candidate', ({ body }, res) => {
+  const errors = inputCheck(body, 'first_name', 'last_name', 'industry_connected');
+  if (errors) {
+    res.status(400).json({ error: errors });
+    return;
+  }
 
-  db.query(sql, params, (err, row) => {
-    if (err) {
-      res.status(400).json({ error: err.message });
-      return
-    }
-    res.json({
-      message: 'success',
-      data: row
-    })
-  })
-});
+  const sql = `INSERT INTO candidates (first_name, last_name, industry_connected)
+    VALUES (?,?,?)`;
+  const params = [body.first_name, body.last_name, body.industry_connected];
 
-// GET candidates not affilated with party
-// weird way to get it since there is no party_id
-app.get('/api/candidate/no_party/:party_id', (req, res) => {
-  const sql = `SELECT candidates.*, parties.name
-               AS party_name 
-               FROM candidates
-               LEFT JOIN parties
-               ON candidates.party_id = parties.id
-               WHERE candidates.party_id IS NULL`;
-  const params = req.params.party_id;
-
-  db.query(sql, params, (err, row) => {
-    if (err) {
-      res.status(400).json({ error: err.message });
-    }
-    res.json({
-      message: 'success',
-      data: row
-    })
-  })
-});
-
-// GET party by id
-app.get('/party/:id', (req, res) => {
-  const sql = `SELECT * 
-         FROM parties
-         WHERE id = ?`;
-  const params = [req.params.id];
-
-  db.query(sql, params, (err, row) => {
+  db.query(sql, params, (err, result) => {
     if (err) {
       res.status(400).json({ error: err.message })
+      return;
     }
     res.json({
       message: 'success',
-      data: row
+      data: body
     })
   })
-})
+});
 
 // UPDATE party for a candidate by id
 app.put('/api/candidate/:id', (req, res) => {
@@ -175,29 +137,70 @@ app.delete('/api/candidate/:id', (req, res) => {
   })
 });
 
-// Add a candidate
-app.post('/api/candidate', ({ body }, res) => {
-  const errors = inputCheck(body, 'first_name', 'last_name', 'industry_connected');
-  if (errors) {
-    res.status(400).json({ error: errors });
-    return;
-  }
+// GET candidates by party name
+app.get('/api/candidate/party/:party_id', (req, res) => {
+  const sql = `SELECT candidates.*, parties.name 
+               AS party_name
+               FROM candidates
+               LEFT JOIN parties
+               ON candidates.party_id = parties.id
+               WHERE candidates.party_id = ?`;
+  const params = [req.params.party_id];
 
-  const sql = `INSERT INTO candidates (first_name, last_name, industry_connected)
-    VALUES (?,?,?)`;
-  const params = [body.first_name, body.last_name, body.industry_connected];
-
-  db.query(sql, params, (err, result) => {
+  db.query(sql, params, (err, row) => {
     if (err) {
-      res.status(400).json({ error: err.message })
-      return;
+      res.status(400).json({ error: err.message });
+      return
     }
     res.json({
       message: 'success',
-      data: body
+      data: row
     })
   })
 });
+
+// GET candidates not affilated with party
+app.get('/api/candidate/no_party/null', (req, res) => {
+  const sql = `SELECT * 
+               FROM candidates
+               WHERE party_id IS NULL`;
+  
+  const params = [req.params.id]
+
+  db.query(sql, params, (err, row) => {
+    if (err) {
+      res.status(400).json({ error: err.message });
+    }
+    res.json({
+      message: 'success',
+      data: row
+    })
+  })
+});
+
+// GET party by id
+app.get('/party/:id', (req, res) => {
+  const sql = `SELECT * 
+         FROM parties
+         WHERE id = ?`;
+  const params = [req.params.id];
+
+  db.query(sql, params, (err, row) => {
+    if (err) {
+      res.status(400).json({ error: err.message })
+    }
+    res.json({
+      message: 'success',
+      data: row
+    })
+  })
+})
+
+
+
+
+
+
 
 // DELETE party
 app.delete('/party/:id', (req, res) => {
